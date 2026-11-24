@@ -58,7 +58,7 @@ function docId(kind: Mutation, mediaId: string) {
       ),
     );
     if (!found.Save || !found.Unsave)
-      throw new Error('Instagram changed how it saves posts. Triage needs an update.');
+      throw new Error('Instagram changed how it saves posts. Content Triage needs an update.');
     return found as Record<Mutation, string>;
   })().catch((error) => {
     docIds = null;

@@ -11,11 +11,15 @@ const icons = { 16: 'icon-16.png', 32: 'icon-32.png', 48: 'icon-48.png', 128: 'i
 
 const manifest = defineManifest({
   manifest_version: 3,
-  name: 'Triage',
+  name: 'Content Triage',
   version: packageInfo.version,
   description: packageInfo.description,
   icons,
-  action: { default_title: 'Triage', default_icon: icons, default_popup: 'src/popup/index.html' },
+  action: {
+    default_title: 'Content Triage',
+    default_icon: icons,
+    default_popup: 'src/popup/index.html',
+  },
   content_scripts: [
     // Page world, one per site: reuses the signed-in session to read and edit the list.
     ...SOURCES.map(({ id, host }) => ({

@@ -1,17 +1,17 @@
-# Install Triage
+# Install Content Triage
 
 Each release folder holds a Chrome zip, a Mozilla-signed Firefox XPI and `SHA256SUMS.txt`.
 Compare the hashes before installing.
 
 ## Firefox 142+
 
-Drag `triage-<version>-firefox-signed.xpi` onto a Firefox window (or `about:addons` →
+Drag `content-triage-<version>-firefox-signed.xpi` onto a Firefox window (or `about:addons` →
 gear → _Install Add-on From File_) and accept. The add-on survives restarts; a newer XPI
 installs over it.
 
 ## Chrome, Edge, Brave, Arc
 
-Unzip `triage-<version>-chrome.zip` into a folder you keep. Open `chrome://extensions`,
+Unzip `content-triage-<version>-chrome.zip` into a folder you keep. Open `chrome://extensions`,
 turn on developer mode, _Load unpacked_, pick that folder. To update, replace the folder's
 contents and reload the extension. There are no automatic updates.
 

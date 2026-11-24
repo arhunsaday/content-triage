@@ -48,7 +48,7 @@ function send(request: Request): Promise<unknown> {
     };
     const timer = setTimeout(() => {
       done();
-      reject(new Error('Triage lost contact with the page. Reload this tab.'));
+      reject(new Error('Content Triage lost contact with the page. Reload this tab.'));
     }, TIMEOUT);
     document.addEventListener(RESPONSE_EVENT, receive);
     document.dispatchEvent(

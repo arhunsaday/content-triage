@@ -1,6 +1,6 @@
 # Privacy
 
-Triage collects nothing and sends nothing anywhere except the site you are triaging:
+Content Triage collects nothing and sends nothing anywhere except the site you are triaging:
 youtube.com, x.com or instagram.com.
 
 It reads your YouTube Watch Later, X bookmarks or Instagram saved posts, and removes,

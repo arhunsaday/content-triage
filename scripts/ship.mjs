@@ -14,7 +14,7 @@ const step = (title, command, args) => {
   }
 };
 const readVersion = async () => JSON.parse(await readFile('package.json', 'utf8')).version;
-const signedXpi = (v) => `releases/${v}/triage-${v}-firefox-signed.xpi`;
+const signedXpi = (v) => `releases/${v}/content-triage-${v}-firefox-signed.xpi`;
 
 // Keys from the environment or a local, git-ignored .env (see docs/distribution.md).
 if (existsSync('.env')) process.loadEnvFile('.env');
@@ -42,7 +42,7 @@ step('Chrome zip', 'ditto', [
   '-k',
   '--norsrc',
   'dist',
-  `${folder}/triage-${version}-chrome.zip`,
+  `${folder}/content-triage-${version}-chrome.zip`,
 ]);
 step('Mozilla signing (unlisted)', 'pnpm', [
   'exec',

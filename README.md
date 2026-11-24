@@ -1,13 +1,13 @@
 <div align="center">
   <img src="brand/logo.svg" width="72" height="72" alt="">
-  <h1>Triage</h1>
+  <h1>Content Triage</h1>
   <p><strong>Clear what you saved for later by swiping.</strong><br>
   YouTube Watch Later, X bookmarks and Instagram saved posts. No account, no backend, no tracking.</p>
 </div>
 
 ---
 
-Triage turns a saved-for-later list into a card stack. Each card shows the post itself:
+Content Triage turns a saved-for-later list into a card stack. Each card shows the post itself:
 photos, carousels and videos play right on the card (muted until you click), and YouTube
 videos play in the embedded player. Decide, and the next one slides in.
 
