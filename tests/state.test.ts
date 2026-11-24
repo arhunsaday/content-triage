@@ -1,23 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { initialState, reducer, summary, type Action, type State } from '@/content/triage/state';
 import { verdictFor } from '@/content/triage/card';
-import type { Video } from '@/shared/protocol';
+import type { Item } from '@/shared/protocol';
 
-const video = (id: string): Video => ({
-  videoId: id,
-  setVideoId: `S${id}`,
+const item = (id: string): Item => ({
+  id,
+  handle: `H${id}`,
+  author: '',
   title: id,
-  channel: '',
+  text: '',
   info: '',
-  duration: null,
-  thumbnail: 'https://i.ytimg.com/x.jpg',
-  progress: 0,
+  url: `https://example.com/${id}`,
+  media: [],
 });
 
 const run = (...actions: Action[]) => actions.reduce<State>(reducer, initialState);
 const loaded = (ids: string[], continuation: string | null = null): Action => ({
   type: 'loaded',
-  page: { videos: ids.map(video), continuation },
+  page: { items: ids.map(item), continuation },
 });
 
 describe('triage state', () => {
@@ -26,7 +26,7 @@ describe('triage state', () => {
       loaded(['a', 'b', 'c']),
       { type: 'decide', verdict: 'remove' },
       { type: 'decide', verdict: 'keep' },
-      { type: 'decide', verdict: 'watch' },
+      { type: 'decide', verdict: 'open' },
     );
     expect(summary(state)).toMatchObject({
       removed: 1,
@@ -41,7 +41,7 @@ describe('triage state', () => {
     expect(state.cursor).toBe(0);
     expect(summary(state)).toMatchObject({
       removed: 0,
-      current: expect.objectContaining({ videoId: 'a' }),
+      current: expect.objectContaining({ id: 'a' }),
     });
   });
 
@@ -70,7 +70,7 @@ describe('triage state', () => {
     expect(summary(state)).toMatchObject({ finished: false, more: true });
     expect(summary(reducer(state, loaded(['b'])))).toMatchObject({
       finished: false,
-      current: expect.objectContaining({ videoId: 'b' }),
+      current: expect.objectContaining({ id: 'b' }),
     });
   });
 });
@@ -86,7 +86,7 @@ describe('swipe verdicts', () => {
   it('maps direction to a verdict past the threshold', () => {
     expect(verdictFor(pan(-200, 0))).toBe('remove');
     expect(verdictFor(pan(200, 0))).toBe('keep');
-    expect(verdictFor(pan(0, -200))).toBe('watch');
+    expect(verdictFor(pan(0, -200))).toBe('open');
   });
 
   it('accepts a quick flick and rejects a small drag', () => {

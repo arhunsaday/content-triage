@@ -17,7 +17,7 @@
   --color-brand: var(--brand);
   --color-destructive: var(--destructive);
   --color-success: var(--success);
-  --color-watch: var(--watch);
+  --color-open: var(--open);
   --color-border: var(--border);
   --color-input: var(--border);
   --color-ring: var(--ring);
@@ -40,7 +40,7 @@
   --brand: #f97316;
   --destructive: #dc2626;
   --success: #15803d;
-  --watch: #2563eb;
+  --open: #2563eb;
   --radius: 0.75rem;
 }
 .dark {
@@ -56,7 +56,7 @@
   --ring: #aaaaaa;
   --destructive: #f87171;
   --success: #4ade80;
-  --watch: #60a5fa;
+  --open: #60a5fa;
 }
 @layer base {
   * {

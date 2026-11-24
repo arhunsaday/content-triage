@@ -5,7 +5,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { createCanvas, encodePng } from './raster.mjs';
 
 export const BRAND = {
-  name: 'YouTube Triage',
+  name: 'Triage',
   ink: '#16161A',
   accent: '#F97316',
   light: '#FFFFFFED',

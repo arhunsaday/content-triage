@@ -1,12 +1,12 @@
-import type { Page, Video } from '@/shared/protocol';
+import type { Page, Item } from '@/shared/protocol';
 
-export type Verdict = 'remove' | 'keep' | 'watch';
+export type Verdict = 'remove' | 'keep' | 'open';
 export type Decision = { index: number; verdict: Verdict; failed: boolean };
 
 export type State = {
-  videos: Video[];
+  items: Item[];
   continuation: string | null;
-  /** Index of the video on top of the stack. */
+  /** Index of the item on top of the stack. */
   cursor: number;
   history: Decision[];
   loaded: boolean;
@@ -23,7 +23,7 @@ export type Action =
   | { type: 'error'; error: string };
 
 export const initialState: State = {
-  videos: [],
+  items: [],
   continuation: null,
   cursor: 0,
   history: [],
@@ -39,13 +39,13 @@ export function reducer(state: State, action: Action): State {
     case 'loaded':
       return {
         ...state,
-        videos: [...state.videos, ...action.page.videos],
+        items: [...state.items, ...action.page.items],
         continuation: action.page.continuation,
         loaded: true,
         loading: false,
       };
     case 'decide':
-      if (state.cursor >= state.videos.length) return state;
+      if (state.cursor >= state.items.length) return state;
       return {
         ...state,
         cursor: state.cursor + 1,
@@ -76,10 +76,10 @@ export function summary(state: State) {
   return {
     removed: counted.filter((d) => d.verdict === 'remove').length,
     kept: counted.filter((d) => d.verdict !== 'remove').length,
-    current: state.videos[state.cursor] as Video | undefined,
+    current: state.items[state.cursor] as Item | undefined,
     finished:
-      state.loaded && !state.loading && !state.continuation && state.cursor >= state.videos.length,
-    total: state.videos.length,
+      state.loaded && !state.loading && !state.continuation && state.cursor >= state.items.length,
+    total: state.items.length,
     more: state.continuation !== null,
   };
 }

@@ -1,23 +1,11 @@
-import type { Page, Video } from '@/shared/protocol';
+import type { Item, Page } from '@/shared/protocol';
+import { walk, type Json } from '../walk';
 
-type Json = Record<string, unknown>;
 type Text = { simpleText?: string; runs?: { text: string }[] } | undefined;
 
 const text = (value: Text) => value?.simpleText ?? value?.runs?.map((r) => r.text).join('') ?? '';
 
-// YouTube reshuffles the wrappers around playlist items often; the item and
-// continuation renderers themselves are stable, so find them wherever they are.
-function walk(node: unknown, visit: (node: Json) => void) {
-  if (!node || typeof node !== 'object') return;
-  if (Array.isArray(node)) {
-    for (const child of node) walk(child, visit);
-    return;
-  }
-  visit(node as Json);
-  for (const child of Object.values(node)) walk(child, visit);
-}
-
-function toVideo(r: Json): Video | null {
+function toItem(r: Json): Item | null {
   const videoId = r.videoId;
   const setVideoId = r.setVideoId;
   if (typeof videoId !== 'string' || typeof setVideoId !== 'string') return null;
@@ -29,28 +17,38 @@ function toVideo(r: Json): Video | null {
     if (resume?.percentDurationWatched) progress = resume.percentDurationWatched;
   });
   return {
-    videoId,
-    setVideoId,
+    id: videoId,
+    handle: setVideoId,
+    author: text(r.shortBylineText as Text),
     title: text(r.title as Text),
-    channel: text(r.shortBylineText as Text),
+    text: '',
     info: text(r.videoInfo as Text),
-    duration: text(r.lengthText as Text) || null,
-    thumbnail: thumbnails?.at(-1)?.url ?? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
-    progress,
+    url: `https://www.youtube.com/watch?v=${videoId}`,
+    media: [
+      {
+        kind: 'youtube',
+        videoId,
+        poster: thumbnails?.at(-1)?.url ?? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+        duration: text(r.lengthText as Text) || null,
+        progress,
+      },
+    ],
   };
 }
 
+// YouTube reshuffles the wrappers around playlist items often; the item and
+// continuation renderers themselves are stable, so find them wherever they are.
 export function parsePage(response: unknown): Page {
-  const videos: Video[] = [];
+  const items: Item[] = [];
   let continuation: string | null = null;
   walk(response, (node) => {
-    const item = node.playlistVideoRenderer as Json | undefined;
-    const video = item && toVideo(item);
-    if (video) videos.push(video);
+    const renderer = node.playlistVideoRenderer as Json | undefined;
+    const item = renderer && toItem(renderer);
+    if (item) items.push(item);
     const token = (node.continuationCommand as { token?: string } | undefined)?.token;
     if (token) continuation = token;
   });
-  return { videos, continuation };
+  return { items, continuation };
 }
 
 /** The setVideoId YouTube assigned to a video that `edit_playlist` just added. */

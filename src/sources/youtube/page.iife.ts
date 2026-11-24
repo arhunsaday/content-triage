@@ -1,15 +1,12 @@
 // Runs in YouTube's own JavaScript world, the only place with the InnerTube
 // client config (`ytcfg`). Requests are signed the way youtube.com signs its
 // own: a SAPISIDHASH derived from the session cookie. Nothing leaves youtube.com.
-import { REQUEST_EVENT, RESPONSE_EVENT, type Envelope, type Reply } from '@/shared/protocol';
+import { cookie, serve } from '@/page/serve';
 import { addedSetVideoId, parsePage } from './parse';
 
 declare const ytcfg: { get(key: string): unknown };
 
 const PLAYLIST = 'WL';
-
-const cookie = (name: string) =>
-  document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))?.[1] ?? null;
 
 async function authorization() {
   const sapisid = cookie('SAPISID') ?? cookie('__Secure-3PAPISID');
@@ -45,45 +42,25 @@ async function edit(actions: object[]) {
   return result;
 }
 
-async function handle(request: Envelope): Promise<unknown> {
-  switch (request.op) {
-    case 'list':
-      return parsePage(
-        await innertube(
-          'browse',
-          request.continuation
-            ? { continuation: request.continuation }
-            : { browseId: `VL${PLAYLIST}` },
-        ),
-      );
-    case 'remove':
-      await edit([{ action: 'ACTION_REMOVE_VIDEO', setVideoId: request.setVideoId }]);
-      return null;
-    case 'restore': {
-      const setVideoId = addedSetVideoId(
-        await edit([{ action: 'ACTION_ADD_VIDEO', addedVideoId: request.videoId }]),
-      );
-      await edit([
-        {
-          action: 'ACTION_MOVE_VIDEO_BEFORE',
-          setVideoId,
-          ...(request.successor && { movedSetVideoIdSuccessor: request.successor }),
-        },
-      ]);
-      return setVideoId;
-    }
-  }
-}
-
-document.addEventListener(REQUEST_EVENT, async (event) => {
-  const detail = (event as CustomEvent<unknown>).detail;
-  if (typeof detail !== 'string') return;
-  const request = JSON.parse(detail) as Envelope;
-  let reply: Reply;
-  try {
-    reply = { id: request.id, ok: true, result: await handle(request) };
-  } catch (error) {
-    reply = { id: request.id, ok: false, error: (error as Error).message };
-  }
-  document.dispatchEvent(new CustomEvent(RESPONSE_EVENT, { detail: JSON.stringify(reply) }));
+serve({
+  list: async (continuation) =>
+    parsePage(
+      await innertube('browse', continuation ? { continuation } : { browseId: `VL${PLAYLIST}` }),
+    ),
+  remove: async (setVideoId) => {
+    await edit([{ action: 'ACTION_REMOVE_VIDEO', setVideoId }]);
+  },
+  restore: async (videoId, successor) => {
+    const setVideoId = addedSetVideoId(
+      await edit([{ action: 'ACTION_ADD_VIDEO', addedVideoId: videoId }]),
+    );
+    await edit([
+      {
+        action: 'ACTION_MOVE_VIDEO_BEFORE',
+        setVideoId,
+        ...(successor && { movedSetVideoIdSuccessor: successor }),
+      },
+    ]);
+    return setVideoId;
+  },
 });

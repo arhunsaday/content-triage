@@ -1,9 +1,9 @@
 {
-  "name": "youtube-triage",
+  "name": "triage",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Clear your YouTube Watch Later by swiping: left to remove, right to keep, up to watch.",
+  "description": "Clear your YouTube Watch Later, X bookmarks and Instagram saved posts by swiping.",
   "license": "MIT",
   "packageManager": "pnpm@11.9.0",
   "engines": {
@@ -32,6 +32,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "tailwind-merge": "3.7.0",
+    "x-client-transaction-id": "0.3.3",
     "zod": "^4.6.5"
   },
   "devDependencies": {

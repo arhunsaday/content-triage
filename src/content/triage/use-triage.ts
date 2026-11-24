@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { YouTube } from '../bridge';
+import type { Item } from '@/shared/protocol';
+import type { Site } from '../bridge';
 import { initialState, reducer, type Action, type Verdict } from './state';
 
 /** Load the next page once fewer than this many cards are left. */
 const PREFETCH = 15;
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
+const label = (item: Item) => (item.title || item.text || item.author).slice(0, 60);
 
-export function useTriage(youtube: YouTube) {
+export function useTriage(site: Site) {
   // Decisions read the latest state synchronously, so two quick swipes can
   // never act on the same card.
   const store = useRef(initialState);
@@ -26,50 +28,49 @@ export function useTriage(youtube: YouTube) {
     return run;
   }, []);
   const removals = useRef(new Map<number, Promise<boolean>>());
-  // A re-added video gets a new setVideoId from YouTube.
+  // A re-added YouTube video gets a new playlist entry id.
   const reissued = useRef(new Map<number, string>());
-  const setVideoId = (index: number) =>
-    reissued.current.get(index) ?? store.current.videos[index].setVideoId;
+  const handle = (index: number) =>
+    reissued.current.get(index) ?? store.current.items[index].handle;
 
   const load = useCallback(
     async (continuation: string | null) => {
       dispatch({ type: 'loading' });
       try {
-        dispatch({ type: 'loaded', page: await youtube.list(continuation) });
+        dispatch({ type: 'loaded', page: await site.list(continuation) });
       } catch (error) {
         dispatch({ type: 'error', error: message(error) });
       }
     },
-    [dispatch, youtube],
+    [dispatch, site],
   );
 
   useEffect(() => {
     void load(null);
   }, [load]);
 
-  const { loaded, loading, error, continuation, videos, cursor } = state;
+  const { loaded, loading, error, continuation, items, cursor } = state;
   useEffect(() => {
-    if (loaded && !loading && !error && continuation && videos.length - cursor < PREFETCH)
+    if (loaded && !loading && !error && continuation && items.length - cursor < PREFETCH)
       void load(continuation);
-  }, [loaded, loading, error, continuation, videos.length, cursor, load]);
+  }, [loaded, loading, error, continuation, items.length, cursor, load]);
 
   const decide = (verdict: Verdict) => {
     const index = store.current.cursor;
-    const video = store.current.videos[index];
-    if (!video) return;
+    const item = store.current.items[index];
+    if (!item) return;
     dispatch({ type: 'decide', verdict });
-    if (verdict === 'watch')
-      window.open(`https://www.youtube.com/watch?v=${video.videoId}`, '_blank', 'noopener');
+    if (verdict === 'open') window.open(item.url, '_blank', 'noopener');
     if (verdict === 'remove')
       removals.current.set(
         index,
-        serial(() => youtube.remove(setVideoId(index))).then(
+        serial(() => site.remove(handle(index))).then(
           () => true,
           (e) => {
             dispatch({
               type: 'failed',
               index,
-              error: `Couldn't remove “${video.title}”: ${message(e)}`,
+              error: `Couldn't remove “${label(item)}”: ${message(e)}`,
             });
             return false;
           },
@@ -84,18 +85,18 @@ export function useTriage(youtube: YouTube) {
     if (last.verdict !== 'remove') return;
     const removed = removals.current.get(last.index);
     removals.current.delete(last.index);
-    const video = store.current.videos[last.index];
+    const item = store.current.items[last.index];
     serial(async () => {
       if (!(await removed)) return;
-      // Undo is last-in-first-out, so the next video is back in the playlist by now.
-      const successor = store.current.videos[last.index + 1] ? setVideoId(last.index + 1) : null;
-      reissued.current.set(last.index, await youtube.restore(video.videoId, successor));
+      // Undo is last-in-first-out, so the next item is back in the list by now.
+      const successor = store.current.items[last.index + 1] ? handle(last.index + 1) : null;
+      reissued.current.set(last.index, await site.restore(item.id, successor));
     }).catch((e) =>
-      dispatch({ type: 'error', error: `Couldn't put back “${video.title}”: ${message(e)}` }),
+      dispatch({ type: 'error', error: `Couldn't put back “${label(item)}”: ${message(e)}` }),
     );
   };
 
-  /** Resolves once every queued change has reached YouTube. */
+  /** Resolves once every queued change has reached the site. */
   const settled = () => tail.current;
 
   return { state, decide, undo, settled };

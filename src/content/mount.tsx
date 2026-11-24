@@ -24,7 +24,7 @@ export function shadowStyles(css: string) {
 }
 
 export function mount(node: ReactNode) {
-  const host = document.createElement('youtube-triage');
+  const host = document.createElement('triage-overlay');
   host.style.cssText = 'all:initial;position:fixed;inset:0;z-index:2147483646;pointer-events:none';
   const shadow = host.attachShadow({ mode: 'open' });
   const style = document.createElement('style');

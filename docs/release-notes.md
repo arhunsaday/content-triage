@@ -1,6 +1,6 @@
-# YouTube Triage 0.1.0
+# Triage 0.2.0
 
-- First release: Watch Later as a card stack. Swipe or press `←` to remove, `→` to keep, `↑`
-  to open in a new tab; undo puts a video back in its old place.
-- Opens from the toolbar button or the **Triage** button on the Watch Later page.
-- Firefox build signed by Mozilla (unlisted), installable permanently.
+- Renamed from YouTube Triage. Now also triages X bookmarks and Instagram saved posts.
+- Photos, carousels and videos play on the card; YouTube videos play in the embedded player.
+- The toolbar button opens a popup to pick Watch Later, Bookmarks or Saved.
+- Swipe up now reads "Open". Undo on X and Instagram brings the item back as the newest one.

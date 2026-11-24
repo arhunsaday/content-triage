@@ -1,14 +1,15 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { AnimatePresence } from 'motion/react';
-import { ArrowUp, Check, LoaderCircle, RotateCcw, X } from 'lucide-react';
+import { ArrowUpRight, Check, LoaderCircle, RotateCcw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { YouTube } from '../bridge';
+import type { Source } from '@/shared/sources';
+import type { Site } from '../bridge';
 import { Card } from './card';
 import { summary, type Verdict } from './state';
 import { useTriage } from './use-triage';
 
-const KEYS: Record<string, Verdict> = { ArrowLeft: 'remove', ArrowRight: 'keep', ArrowUp: 'watch' };
+const KEYS: Record<string, Verdict> = { ArrowLeft: 'remove', ArrowRight: 'keep', ArrowUp: 'open' };
 
 function Kbd({ children }: { children: ReactNode }) {
   return (
@@ -28,17 +29,19 @@ function Message({ title, children }: { title: string; children?: ReactNode }) {
 }
 
 export function Triage({
-  youtube,
+  source,
+  site,
   onClose,
 }: {
-  youtube: YouTube;
+  source: Source;
+  site: Site;
   onClose: (changed: boolean) => void;
 }) {
-  const { state, decide, undo, settled } = useTriage(youtube);
+  const { state, decide, undo, settled } = useTriage(site);
   const { removed, kept, current, finished, total, more } = summary(state);
   const [closing, setClosing] = useState(false);
   const lastVerdict = state.history.at(-1)?.verdict;
-  const stack = state.videos.slice(state.cursor, state.cursor + 3);
+  const stack = state.items.slice(state.cursor, state.cursor + 3);
 
   const close = async () => {
     setClosing(true);
@@ -51,7 +54,7 @@ export function Triage({
       const verdict = KEYS[event.key];
       const isUndo = event.key.toLowerCase() === 'z' || event.key === 'Backspace';
       if (!verdict && !isUndo && event.key !== 'Escape') return;
-      // Keep YouTube's own shortcuts from firing underneath the overlay.
+      // Keep the site's own shortcuts from firing underneath the overlay.
       event.preventDefault();
       event.stopImmediatePropagation();
       if (event.repeat || closing) return;
@@ -67,11 +70,11 @@ export function Triage({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Triage Watch Later"
+      aria-label={`Triage ${source.title}`}
       className="pointer-events-auto fixed inset-0 flex flex-col bg-background/95 text-foreground backdrop-blur-md"
     >
       <header className="flex items-center gap-3 px-6 py-4">
-        <h1 className="text-lg font-semibold">Watch Later</h1>
+        <h1 className="text-lg font-semibold">{source.title}</h1>
         {state.loaded && total > 0 && (
           <span className="text-sm text-muted-foreground tabular-nums">
             {Math.min(state.cursor + 1, total)} / {total}
@@ -96,9 +99,9 @@ export function Triage({
         </p>
       )}
 
-      <main className="flex flex-1 flex-col items-center justify-center gap-10 px-4">
+      <main className="flex flex-1 flex-col items-center justify-center gap-8 px-4">
         {finished ? (
-          <Message title={total === 0 ? 'Watch Later is empty' : 'All triaged'}>
+          <Message title={total === 0 ? `${source.title} is empty` : 'All triaged'}>
             <Button onClick={close} disabled={closing}>
               Done
             </Button>
@@ -107,13 +110,21 @@ export function Triage({
           <LoaderCircle className="size-8 animate-spin text-muted-foreground" />
         ) : (
           <>
-            <div className="relative aspect-[4/3] w-[min(480px,90vw)]">
+            <div
+              className={cn(
+                'relative',
+                // YouTube cards are a 16:9 player plus a two-line title; posts are often portrait.
+                source.id === 'youtube'
+                  ? 'h-[calc(min(480px,90vw)*9/16+7.5rem)] w-[min(480px,90vw)]'
+                  : 'h-[min(68vh,680px)] w-[min(440px,92vw)]',
+              )}
+            >
               <AnimatePresence custom={lastVerdict}>
                 {stack
-                  .map((video, depth) => (
+                  .map((item, depth) => (
                     <Card
-                      key={`${state.cursor + depth}-${video.videoId}`}
-                      video={video}
+                      key={`${state.cursor + depth}-${item.id}`}
+                      item={item}
                       depth={depth}
                       onDecide={decide}
                     />
@@ -140,8 +151,8 @@ export function Triage({
               >
                 <X />
               </Action>
-              <Action label="Watch" hint="↑" className="text-watch" onClick={() => decide('watch')}>
-                <ArrowUp />
+              <Action label="Open" hint="↑" className="text-open" onClick={() => decide('open')}>
+                <ArrowUpRight />
               </Action>
               <Action label="Keep" hint="→" className="text-success" onClick={() => decide('keep')}>
                 <Check />

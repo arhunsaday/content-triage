@@ -1,26 +1,31 @@
 <div align="center">
   <img src="brand/logo.svg" width="72" height="72" alt="">
-  <h1>YouTube Triage</h1>
-  <p><strong>Clear your Watch Later by swiping.</strong><br>
-  Left to remove, right to keep, up to watch. No account, no backend, no tracking.</p>
+  <h1>Triage</h1>
+  <p><strong>Clear what you saved for later by swiping.</strong><br>
+  YouTube Watch Later, X bookmarks and Instagram saved posts. No account, no backend, no tracking.</p>
 </div>
 
 ---
 
-YouTube Triage turns your Watch Later playlist into a card stack. Each card shows the
-thumbnail, title, channel, length and how much you have already watched. Decide, and the
-next one slides in.
+Triage turns a saved-for-later list into a card stack. Each card shows the post itself:
+photos, carousels and videos play right on the card (muted until you click), and YouTube
+videos play in the embedded player. Decide, and the next one slides in.
 
-| Gesture     | Key       | Effect                                         |
-| ----------- | --------- | ---------------------------------------------- |
-| Swipe left  | `←`       | Remove from Watch Later                        |
-| Swipe right | `→`       | Keep it and move on                            |
-| Swipe up    | `↑`       | Open it in a new tab, keep it                  |
-| Undo button | `Z` / `⌫` | Undo the last decision, back to its old place  |
-| Close       | `Esc`     | Close; the Watch Later page reloads if changed |
+| Gesture     | Key       | Effect                                     |
+| ----------- | --------- | ------------------------------------------ |
+| Swipe left  | `←`       | Remove from the list                       |
+| Swipe right | `→`       | Keep it and move on                        |
+| Swipe up    | `↑`       | Open it in a new tab, keep it              |
+| Undo button | `Z` / `⌫` | Undo the last decision                     |
+| Close       | `Esc`     | Close; the list page reloads if it changed |
 
-Open it with the toolbar button (from any tab) or the **Triage** button on
-`youtube.com/playlist?list=WL`.
+Open it from the toolbar popup, or the **Triage** button on each site's list page.
+
+| Source      | List page                      |
+| ----------- | ------------------------------ |
+| Watch Later | `youtube.com/playlist?list=WL` |
+| Bookmarks   | `x.com/i/history`              |
+| Saved       | `instagram.com/<you>/saved/`   |
 
 ## Install
 
@@ -32,16 +37,21 @@ Download the latest build from [`releases/`](releases/), then follow
 
 From source: `pnpm install && pnpm build:all`, then load `dist/` unpacked in Chrome or
 `dist-firefox/manifest.json` from `about:debugging#/runtime/this-firefox` in Firefox. After a
-rebuild, reload the extension, then reload the YouTube tab.
+rebuild, reload the extension, then reload the site's tab.
 
 ## How it works
 
-A page-world script calls the same InnerTube endpoints youtube.com uses for its own
-"Remove from Watch later" menu (`browse` and `browse/edit_playlist`), signed with your
-existing session. Undo re-adds the video and moves it back before its original neighbour.
-Writes run one at a time, in order, so an undo always lands after the removal it reverses.
+Each site gets a page-world script that calls the same endpoints the site uses for its own
+remove, unbookmark or unsave button, with your existing session: YouTube's InnerTube
+`browse/edit_playlist`, X's GraphQL `Bookmarks` / `DeleteBookmark` / `CreateBookmark`
+(operation ids read from X's loaded web app, since they change with every deploy), and
+Instagram's `feed/saved` and `web/save` API. Writes run one at a time, in order, so an undo
+always lands after the removal it reverses.
 
-The extension requests no permissions beyond running on `www.youtube.com`.
+Undo on YouTube puts the video back in its old place. X and Instagram cannot reorder, so an
+undone item comes back as your newest bookmark or save.
+
+The extension requests no permissions beyond running on these three sites.
 
 ## Development
 
@@ -53,10 +63,11 @@ pnpm brand      # regenerate icons and brand/logo.svg
 pnpm ship patch # bump, verify, sign the Firefox XPI, refresh releases/
 ```
 
-| Path                         | Role                                                |
-| ---------------------------- | --------------------------------------------------- |
-| `src/page/innertube.iife.ts` | Page world: reads and edits Watch Later             |
-| `src/page/parse.ts`          | InnerTube response parsing                          |
-| `src/content/bridge.ts`      | Typed, validated requests to the page world         |
-| `src/content/triage/`        | Card stack, swipe physics, decisions and undo queue |
-| `src/background/index.ts`    | Toolbar button                                      |
+| Path                    | Role                                                |
+| ----------------------- | --------------------------------------------------- |
+| `src/shared/sources.ts` | The three sources: names, hosts, list pages         |
+| `src/sources/<site>/`   | Page world per site: API calls and response parsing |
+| `src/page/serve.ts`     | Page-world request loop and navigation events       |
+| `src/content/bridge.ts` | Typed, validated requests to the page world         |
+| `src/content/triage/`   | Card stack, media viewer, decisions and undo queue  |
+| `src/popup/`            | Toolbar popup                                       |

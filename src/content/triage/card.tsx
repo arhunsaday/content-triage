@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import {
   motion,
   useMotionValue,
@@ -6,15 +7,16 @@ import {
   type PanInfo,
   type Variants,
 } from 'motion/react';
-import type { Video } from '@/shared/protocol';
+import type { Item } from '@/shared/protocol';
 import { cn } from '@/lib/utils';
+import { Gallery } from './media';
 import type { Verdict } from './state';
 
 const DISTANCE = 120;
 const SPEED = 600;
 
 export function verdictFor({ offset, velocity }: PanInfo): Verdict | null {
-  if (offset.y < -DISTANCE || velocity.y < -SPEED) return 'watch';
+  if (offset.y < -DISTANCE || velocity.y < -SPEED) return 'open';
   if (offset.x < -DISTANCE || velocity.x < -SPEED) return 'remove';
   if (offset.x > DISTANCE || velocity.x > SPEED) return 'keep';
   return null;
@@ -23,7 +25,7 @@ export function verdictFor({ offset, velocity }: PanInfo): Verdict | null {
 const variants: Variants = {
   stacked: (depth: number) => ({ scale: 1 - depth * 0.05, y: depth * 16, opacity: 1 }),
   exit: (verdict: Verdict | undefined) =>
-    verdict === 'watch'
+    verdict === 'open'
       ? { y: -700, opacity: 0, transition: { duration: 0.3 } }
       : { x: verdict === 'remove' ? -700 : 700, opacity: 0, transition: { duration: 0.3 } },
 };
@@ -41,7 +43,7 @@ function Stamp({
     <motion.span
       style={{ opacity }}
       className={cn(
-        'pointer-events-none absolute top-6 rounded-lg border-4 px-3 py-1 text-2xl font-black tracking-wider uppercase',
+        'pointer-events-none absolute top-6 z-10 rounded-lg border-4 bg-card/80 px-3 py-1 text-2xl font-black tracking-wider uppercase',
         className,
       )}
     >
@@ -51,11 +53,11 @@ function Stamp({
 }
 
 export function Card({
-  video,
+  item,
   depth,
   onDecide,
 }: {
-  video: Video;
+  item: Item;
   depth: number;
   onDecide: (verdict: Verdict) => void;
 }) {
@@ -64,8 +66,11 @@ export function Card({
   const rotate = useTransform(x, [-300, 300], [-15, 15]);
   const remove = useTransform(x, [-DISTANCE, -20], [1, 0]);
   const keep = useTransform(x, [20, DISTANCE], [0, 1]);
-  const watch = useTransform(y, [-DISTANCE, -20], [1, 0]);
+  const open = useTransform(y, [-DISTANCE, -20], [1, 0]);
+  // A drag ends with a click on whatever is under the pointer; media ignores it.
+  const dragged = useRef(false);
   const top = depth === 0;
+  const hasMedia = item.media.length > 0;
 
   return (
     <motion.article
@@ -78,33 +83,42 @@ export function Card({
       drag={top}
       dragSnapToOrigin
       dragElastic={0.9}
+      onPointerDown={() => (dragged.current = false)}
+      onDragStart={() => (dragged.current = true)}
       onDragEnd={(_, info) => {
         const verdict = verdictFor(info);
         if (verdict) onDecide(verdict);
       }}
       aria-hidden={!top}
       className={cn(
-        'absolute inset-x-0 top-0 overflow-hidden rounded-2xl border bg-card shadow-2xl select-none',
+        'absolute inset-0 flex flex-col overflow-hidden rounded-2xl border bg-card shadow-2xl select-none',
         top ? 'cursor-grab touch-none active:cursor-grabbing' : 'pointer-events-none',
       )}
     >
-      <div className="relative aspect-video bg-muted">
-        <img src={video.thumbnail} alt="" draggable={false} className="size-full object-cover" />
-        {video.duration && (
-          <span className="absolute right-2 bottom-2 rounded bg-black/80 px-1.5 py-0.5 text-xs font-medium text-white">
-            {video.duration}
-          </span>
+      {hasMedia && (
+        <Gallery key={item.id} media={item.media} active={top} isClick={() => !dragged.current} />
+      )}
+      <div
+        className={cn(
+          'space-y-2 overflow-y-auto p-4',
+          hasMedia ? 'max-h-[40%] shrink-0' : 'flex-1 p-6',
         )}
-        {video.progress > 0 && (
-          <div className="absolute inset-x-0 bottom-0 h-1 bg-white/30">
-            <div className="h-full bg-brand" style={{ width: `${video.progress}%` }} />
-          </div>
+      >
+        {item.title && (
+          <h2 className="line-clamp-2 text-lg leading-snug font-semibold">{item.title}</h2>
         )}
-      </div>
-      <div className="space-y-1 p-4">
-        <h2 className="line-clamp-2 text-lg leading-snug font-semibold">{video.title}</h2>
+        {item.text && (
+          <p
+            className={cn(
+              'break-words whitespace-pre-line',
+              hasMedia ? 'line-clamp-4 text-sm' : 'text-lg leading-relaxed',
+            )}
+          >
+            {item.text}
+          </p>
+        )}
         <p className="truncate text-sm text-muted-foreground">
-          {[video.channel, video.info].filter(Boolean).join(' · ')}
+          {[item.author, item.info].filter(Boolean).join(' · ')}
         </p>
       </div>
       {top && (
@@ -120,9 +134,9 @@ export function Card({
             className="left-6 -rotate-12 border-success text-success"
           />
           <Stamp
-            label="Watch"
-            opacity={watch}
-            className="left-1/2 -translate-x-1/2 border-watch text-watch"
+            label="Open"
+            opacity={open}
+            className="left-1/2 -translate-x-1/2 border-open text-open"
           />
         </>
       )}

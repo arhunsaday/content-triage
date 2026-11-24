@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addedSetVideoId, parsePage } from '@/page/parse';
+import { addedSetVideoId, parsePage } from '@/sources/youtube/parse';
 
 const item = (videoId: string, setVideoId: string, extra: object = {}) => ({
   playlistVideoRenderer: {
@@ -70,22 +70,36 @@ describe('parsePage', () => {
   it('reads videos and the continuation token', () => {
     const page = parsePage(firstPage);
     expect(page.continuation).toBe('NEXT');
-    expect(page.videos).toEqual([
+    expect(page.items).toEqual([
       {
-        videoId: 'a',
-        setVideoId: 'SA',
+        id: 'a',
+        handle: 'SA',
+        author: 'Channel',
         title: 'Title a',
-        channel: 'Channel',
+        text: '',
         info: '2.8M views • 1 month ago',
-        duration: '12:34',
-        thumbnail: 'https://i.ytimg.com/large.jpg',
-        progress: 42,
+        url: 'https://www.youtube.com/watch?v=a',
+        media: [
+          {
+            kind: 'youtube',
+            videoId: 'a',
+            poster: 'https://i.ytimg.com/large.jpg',
+            duration: '12:34',
+            progress: 42,
+          },
+        ],
       },
       expect.objectContaining({
-        videoId: 'b',
-        duration: null,
-        thumbnail: 'https://i.ytimg.com/vi/b/hqdefault.jpg',
-        progress: 0,
+        id: 'b',
+        media: [
+          {
+            kind: 'youtube',
+            videoId: 'b',
+            poster: 'https://i.ytimg.com/vi/b/hqdefault.jpg',
+            duration: null,
+            progress: 0,
+          },
+        ],
       }),
     ]);
   });
@@ -97,13 +111,13 @@ describe('parsePage', () => {
       ],
     };
     expect(parsePage(last)).toEqual({
-      videos: [expect.objectContaining({ videoId: 'c' })],
+      items: [expect.objectContaining({ id: 'c', handle: 'SC' })],
       continuation: null,
     });
   });
 
   it('skips entries that cannot be edited', () => {
-    expect(parsePage({ playlistVideoRenderer: { videoId: 'x' } }).videos).toEqual([]);
+    expect(parsePage({ playlistVideoRenderer: { videoId: 'x' } }).items).toEqual([]);
   });
 });
 
